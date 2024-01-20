@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "simkgc"
+version = "0.1.0"
+description = ""
+authors = ["Shawn T. O'Neil <shawn@tislab.org>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pandas = "^2.1.4"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
