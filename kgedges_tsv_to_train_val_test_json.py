@@ -142,7 +142,6 @@ with open(input_tsv, 'r') as f:
         # we will also use the random seed to shuffle the edges within each split
 
         random_number = random.random()
-        print(random_number, train, valid, test)
         if random_number < train:
             # add to train
             with open(output_dir + '/train.txt.json', 'a') as f:
