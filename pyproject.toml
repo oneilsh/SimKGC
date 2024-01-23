@@ -6,7 +6,7 @@ authors = ["Shawn T. O'Neil <shawn@tislab.org>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.10"
 pandas = "^2.1.4"
 torch = "^2.1.2"
 transformers = "^4.36.2"
