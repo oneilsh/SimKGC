@@ -3,7 +3,7 @@
 set -x
 set -e
 
-TASK="kg_hub/mfoem_kgx_tsv.tar.gz"
+TASK="kg_hub/monarch.tar.gz"
 
 DIR="$( cd "$( dirname "$0" )" && cd .. && pwd )"
 echo "working directory: ${DIR}"

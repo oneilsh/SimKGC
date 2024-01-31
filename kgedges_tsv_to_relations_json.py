@@ -38,7 +38,6 @@ relations = {}
 with open(input_tsv, 'r') as f:
     first_line = f.readline()
     for line in f:
-        line = line.strip()
         values = line.split('\t')
         relation = values[columns.index('predicate')]
         original_relation = relation

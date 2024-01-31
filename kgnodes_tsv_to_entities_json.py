@@ -35,7 +35,6 @@ entities = []
 with open(input_tsv, 'r') as f:
     first_line = f.readline()
     for line in f:
-        line = line.strip()
         values = line.split('\t')
         entity_id = values[columns.index(entity_id_column)]
         entity_name = values[columns.index(entity_name_column)]
