@@ -3,7 +3,7 @@
 set -x
 set -e
 
-TASK="kg_hub/monarch.tar.gz"
+TASK="kg_hub/monarch-kg.tar.gz"
 
 DIR="$( cd "$( dirname "$0" )" && cd .. && pwd )"
 echo "working directory: ${DIR}"
