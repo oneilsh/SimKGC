@@ -99,6 +99,7 @@ random.seed(seed)
 with open(input_tsv, 'r') as f:
     first_line = f.readline()
     for line in f:
+        line = line.strip()
         values = line.split('\t')
         subject_id = values[columns.index('subject')]
         predicate_id = values[columns.index('predicate')]
