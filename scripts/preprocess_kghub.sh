@@ -5,7 +5,7 @@ set -e
 
 # defaults:
 #GRAPH="https://kg-hub.berkeleybop.io/kg-obo/mfoem/2022-07-19/mfoem_kgx_tsv.tar.gz"
-GRAPH="https://data.monarchinitiative.org/monarch-kg/latest/monarch-kg.tar.gz"
+GRAPH="https://kghub.io/kg-obo/mondo/2024-03-04/mondo_kgx_tsv.tar.gz"
 TRAIN_PERCENTAGE=0.8
 VALID_PERCENTAGE=0.1
 TEST_PERCENTAGE=0.1

@@ -105,7 +105,7 @@ except Exception:
     args.use_amp = False
     warnings.warn('AMP training is not available, set use_amp=False')
 
-if not torch.cuda.is_available():
+if not torch.backends.mps.is_available():
     args.use_amp = False
     args.print_freq = 1
     warnings.warn('GPU is not available, set use_amp=False and print_freq=1')
