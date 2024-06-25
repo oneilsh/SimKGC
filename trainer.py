@@ -12,7 +12,7 @@ from transformers import AdamW
 
 from doc import Dataset, collate
 from utils import AverageMeter, ProgressMeter
-from utils import save_checkpoint, delete_old_ckt, report_num_trainable_parameters, move_to_mps, get_model_obj
+from utils import save_checkpoint, delete_old_ckt, report_num_trainable_parameters, move_to_device, get_model_obj
 from metric import accuracy
 from models import build_model, ModelOutput
 from dict_hub import build_tokenizer
@@ -33,7 +33,10 @@ class Trainer:
         self._setup_training()
 
         # define loss function (criterion) and optimizer
-        self.criterion = nn.CrossEntropyLoss().to(torch.device("mps"))
+        if args.mps_backend:
+            self.criterion = nn.CrossEntropyLoss().to(torch.device("mps"))
+        else:
+            self.criterion = nn.CrossEntropyLoss().cuda()
 
         self.optimizer = AdamW([p for p in self.model.parameters() if p.requires_grad],
                                lr=args.lr,
@@ -106,8 +109,11 @@ class Trainer:
         for i, batch_dict in enumerate(self.valid_loader):
             self.model.eval()
 
-            if torch.backends.mps.is_available():
-                batch_dict = move_to_mps(batch_dict)
+            if self.args.mps_backend:
+                if torch.backends.mps.is_available():
+                    batch_dict = move_to_device(batch_dict, "mps")
+            else:
+                batch_dict = move_to_device(batch_dict, "cuda")
             batch_size = len(batch_dict['batch_data'])
 
             outputs = self.model(**batch_dict)
@@ -141,8 +147,11 @@ class Trainer:
             # switch to train mode
             self.model.train()
 
-            if torch.backends.mps.is_available():
-                batch_dict = move_to_mps(batch_dict)
+            if self.args.mps_backend:
+                if torch.backends.mps.is_available():
+                    batch_dict = move_to_device(batch_dict, "mps")
+            else:
+                batch_dict = move_to_device(batch_dict, "cuda")
             batch_size = len(batch_dict['batch_data'])
 
             # compute output
@@ -188,7 +197,7 @@ class Trainer:
         logger.info('Learning rate: {}'.format(self.scheduler.get_last_lr()[0]))
 
     def _setup_training(self):
-        if False:
+        if not self.args.mps_backend:
             self.model = torch.nn.DataParallel(self.model).cuda()
         elif torch.backends.mps.is_available():
             self.model.to(torch.device("mps"))

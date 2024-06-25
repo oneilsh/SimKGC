@@ -33,4 +33,5 @@ poetry run python3 -u main.py \
 --finetune-t \
 --epochs 50 \
 --workers 4 \
---max-to-keep 3 "$@"
+--max-to-keep 3 "$@" \
+--mps-backend True

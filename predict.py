@@ -10,7 +10,7 @@ from collections import OrderedDict
 from doc import collate, Example, Dataset
 from config import args
 from models import build_model
-from utils import AttrDict, move_to_mps
+from utils import AttrDict, move_to_device
 from dict_hub import build_tokenizer
 from logger_config import logger
 
@@ -20,7 +20,7 @@ class BertPredictor:
     def __init__(self):
         self.model = None
         self.train_args = AttrDict()
-        self.use_mps = False
+        self.use_device = False
 
     def load(self, ckt_path, use_data_parallel=False):
         assert os.path.exists(ckt_path)
@@ -40,13 +40,14 @@ class BertPredictor:
         self.model.load_state_dict(new_state_dict, strict=True)
         self.model.eval()
 
-        if use_data_parallel and False:
+        if use_data_parallel and not args.mps_backend:
             logger.info('Use data parallel predictor')
             self.model = torch.nn.DataParallel(self.model).cuda()
             self.use_cuda = True
-        elif torch.backends.mps.is_available():
-            self.model.to(torch.device("mps"))
-            self.use_mps = True
+        elif args.mps_backend:
+            if torch.backends.mps.is_available():
+                self.model.to(torch.device("mps"))
+                self.use_device = True
         logger.info('Load model from {} successfully'.format(ckt_path))
 
     def _setup_args(self):
@@ -69,8 +70,11 @@ class BertPredictor:
 
         hr_tensor_list, tail_tensor_list = [], []
         for idx, batch_dict in enumerate(data_loader):
-            if self.use_mps:
-                batch_dict = move_to_mps(batch_dict)
+            if self.use_device:
+                if args.mps_backend:
+                    batch_dict = move_to_device(batch_dict, "mps")
+                else:
+                    batch_dict = move_to_device(batch_dict, "cuda")
             outputs = self.model(**batch_dict)
             hr_tensor_list.append(outputs['hr_vector'])
             tail_tensor_list.append(outputs['tail_vector'])
@@ -93,8 +97,11 @@ class BertPredictor:
         ent_tensor_list = []
         for idx, batch_dict in enumerate(tqdm.tqdm(data_loader)):
             batch_dict['only_ent_embedding'] = True
-            if self.use_mps:
-                batch_dict = move_to_mps(batch_dict)
+            if self.use_device:
+                if args.mps_backend:
+                    batch_dict = move_to_device(batch_dict, "mps")
+                else:
+                    batch_dict = move_to_device(batch_dict, "cuda")
             outputs = self.model(**batch_dict)
             ent_tensor_list.append(outputs['ent_vectors'])
 

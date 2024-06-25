@@ -9,7 +9,10 @@ from logger_config import logger, add_file_handler
 
 
 def main():
-    ngpus_per_node = 1
+    if args.mps_backend:
+        ngpus_per_node = 1
+    else:
+        ngpus_per_node = torch.cuda.device_count()
     cudnn.benchmark = True
 
     # Configure log file path and add file handler

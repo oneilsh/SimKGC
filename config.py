@@ -68,6 +68,9 @@ parser.add_argument('-p', '--print-freq', default=50, type=int,
                     metavar='N', help='print frequency (default: 10)')
 parser.add_argument('--seed', default=None, type=int,
                     help='seed for initializing training. ')
+parser.add_argument('--mps-backend', default=False, type=bool,
+                    help='use mps backend instead of nvidia')
+
 
 # only used for evaluation
 parser.add_argument('--is-test', action='store_true',
@@ -105,7 +108,8 @@ except Exception:
     args.use_amp = False
     warnings.warn('AMP training is not available, set use_amp=False')
 
-if not torch.backends.mps.is_available():
-    args.use_amp = False
-    args.print_freq = 1
-    warnings.warn('GPU is not available, set use_amp=False and print_freq=1')
+if args.mps_backend:
+    if not torch.backends.mps.is_available():
+        args.use_amp = False
+        args.print_freq = 1
+        warnings.warn('GPU is not available, set use_amp=False and print_freq=1')

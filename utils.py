@@ -44,17 +44,20 @@ def get_model_obj(model: nn.Module):
     return model.module if hasattr(model, "module") else model
 
 
-def move_to_mps(sample):
-    def _move_to_mps(maybe_tensor):
+def move_to_device(sample, device = "cuda"):
+    def _move_to_device(maybe_tensor, device):
         if torch.is_tensor(maybe_tensor):
-            return maybe_tensor.to(torch.device("mps"), non_blocking=True)
+            if device == "mps":
+                return maybe_tensor.to(torch.device("mps"), non_blocking=True)
+            else:
+                return maybe_tensor.cuda(non_blocking=True)
         elif isinstance(maybe_tensor, dict):
-            return {key: _move_to_mps(value) for key, value in maybe_tensor.items()}
+            return {key: _move_to_device(value, device) for key, value in maybe_tensor.items()}
         elif isinstance(maybe_tensor, list):
-            return [_move_to_mps(x) for x in maybe_tensor]
+            return [_move_to_device(x, device) for x in maybe_tensor]
         else:
             return maybe_tensor
-    return _move_to_mps(sample)
+    return _move_to_device(sample, device)
 
 
 class AverageMeter(object):

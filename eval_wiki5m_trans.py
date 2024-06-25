@@ -53,7 +53,10 @@ def _load_entity_embeddings():
 
 
 def predict_by_split():
-    args.batch_size = max(args.batch_size, 1 * 1024)
+    if args.mps_backend:
+        args.batch_size = max(args.batch_size, 1 * 1024)
+    else:
+        args.batch_size = max(args.batch_size, torch.cuda.device_count() * 1024)
     assert os.path.exists(args.valid_path)
     assert os.path.exists(args.train_path)
     assert os.path.exists(args.eval_model_path)
@@ -62,7 +65,11 @@ def predict_by_split():
     predictor.load(ckt_path=args.eval_model_path, use_data_parallel=True)
     _dump_entity_embeddings(predictor)
 
-    entity_tensor = _load_entity_embeddings().to(torch.device("mps"))
+    if args.mps_backend:
+        entity_tensor = _load_entity_embeddings().to(torch.device("mps"))
+    else:
+        entity_tensor = _load_entity_embeddings().cuda()
+        
     forward_metrics = eval_single_direction(predictor,
                                             entity_tensor=entity_tensor,
                                             eval_forward=True,
