@@ -7,10 +7,20 @@ from config import args
 from triplet import TripletDict, EntityDict, LinkGraph
 from logger_config import logger
 
+# Global variables
+
+# TripletDicts contain dictionaries of the form {(head_id, relation): {tail_id1, tail_id2, ...}}
 train_triplet_dict: TripletDict = None
 all_triplet_dict: TripletDict = None
+
+# LinkGraphs are built as a dictionary where each key is a tuple (head_id, relation) and the value is a set of tail ids.
+# These are used along with the entity dictionary represent the graph structure.
+# EntityDicts store information about entities, such as their id, name, and description, and can be queried by id, index, or value (to get the id or index)
 link_graph: LinkGraph = None
 entity_dict: EntityDict = None
+
+# Tokenizer for the model
+# The tokenizer is built from the pretrained model specified in the config
 tokenizer: AutoTokenizer = None
 
 

@@ -11,11 +11,13 @@ from triplet_mask import construct_mask
 
 
 def build_model(args) -> nn.Module:
+    """Initialize a CustomBertModel model and return it."""
     return CustomBertModel(args)
 
 
 @dataclass
 class ModelOutput:
+    """Model output dataclass. Contains logits, labels, inv_t, hr_vector (head + relation vector), and tail_vector."""
     logits: torch.tensor
     labels: torch.tensor
     inv_t: torch.tensor
@@ -26,31 +28,57 @@ class ModelOutput:
 class CustomBertModel(nn.Module, ABC):
     def __init__(self, args):
         super().__init__()
+        # Load pretrained model and config
+        # args is passed from the command-line args
         self.args = args
+        # AutoConfig is a class that stores the configuration of a model (e.g. the number of layers, the hidden layer size, etc.)
         self.config = AutoConfig.from_pretrained(args.pretrained_model)
+        # The log of the inverse temperature
+        # if finetune_t is True, the log_inv_t parameter is trainable
         self.log_inv_t = torch.nn.Parameter(torch.tensor(1.0 / args.t).log(), requires_grad=args.finetune_t)
+        # The additive margin
+        # This is used in the InfoNCE loss function
         self.add_margin = args.additive_margin
+        # The batch size
         self.batch_size = args.batch_size
+        # The number of pre-batch used for negatives
         self.pre_batch = args.pre_batch
+        # The weight for logits from pre-batch negatives
         num_pre_batch_vectors = max(1, self.pre_batch) * self.batch_size
+        # Randomly initialize the pre-batch vectors
         random_vector = torch.randn(num_pre_batch_vectors, self.config.hidden_size)
+        # Normalize the pre-batch vectors along the hidden size dimension
+        # register_buffer is used to register a tensor as a buffer, which is a tensor that is not a model parameter
         self.register_buffer("pre_batch_vectors",
                              nn.functional.normalize(random_vector, dim=1),
                              persistent=False)
+        # The offset, which is used to keep track of the current position in the pre-batch vectors
+        # The pre-batch vectors are updated in a circular manner, reusing the buffer over time
         self.offset = 0
         self.pre_batch_exs = [None for _ in range(num_pre_batch_vectors)]
 
+        # Load the pretrained model, once for the hr encoder, and once for the tail encoder
         self.hr_bert = AutoModel.from_pretrained(args.pretrained_model)
         self.tail_bert = deepcopy(self.hr_bert)
 
     def _encode(self, encoder, token_ids, mask, token_type_ids):
+        """Encode the input using the encoder.
+        Args:
+            encoder: The encoder model
+            token_ids: The token ids
+            mask: The attention mask
+            token_type_ids: The token type ids"""
         outputs = encoder(input_ids=token_ids,
                           attention_mask=mask,
                           token_type_ids=token_type_ids,
                           return_dict=True)
 
+        # Get the last hidden state
         last_hidden_state = outputs.last_hidden_state
+        # last_hidden_state: (batch_size, seq_len, hidden_size)
+        # this gets the embedding of the first token, which is the [CLS] token in BERT
         cls_output = last_hidden_state[:, 0, :]
+        # Pool the output
         cls_output = _pool_output(self.args.pooling, cls_output, mask, last_hidden_state)
         return cls_output
 
@@ -58,6 +86,18 @@ class CustomBertModel(nn.Module, ABC):
                 tail_token_ids, tail_mask, tail_token_type_ids,
                 head_token_ids, head_mask, head_token_type_ids,
                 only_ent_embedding=False, **kwargs) -> dict:
+        """Forward pass of the model.
+        Args:
+            hr_token_ids: The token ids for the head and relation
+            hr_mask: The attention mask for the head and relation (1 for tokens, 0 for padding)
+            hr_token_type_ids: The token type ids for the head and relation
+            tail_token_ids: The token ids for the tail
+            tail_mask: The attention mask for the tail
+            tail_token_type_ids: The token type ids for the tail
+            head_token_ids: The token ids for the head
+            head_mask: The attention mask for the head
+            head_token_type_ids: The token type ids for the head
+            only_ent_embedding: If True, only return the tail entity embedding. If False, return emebeddings for head, tail, and hr combined."""
         if only_ent_embedding:
             return self.predict_ent_embedding(tail_token_ids=tail_token_ids,
                                               tail_mask=tail_mask,
@@ -84,6 +124,13 @@ class CustomBertModel(nn.Module, ABC):
                 'head_vector': head_vector}
 
     def compute_logits(self, output_dict: dict, batch_dict: dict) -> dict:
+        """Compute the logits for the model.
+        Args:
+            output_dict: The output dictionary from the forward pass
+            batch_dict: The batch dictionary containing the batch data and triplet mask.
+            
+        Returns:
+            A dictionary containing the logits, labels, inv_t, hr_vector, and tail_vector."""
         hr_vector, tail_vector = output_dict['hr_vector'], output_dict['tail_vector']
         batch_size = hr_vector.size(0)
         labels = torch.arange(batch_size).to(hr_vector.device)
@@ -145,6 +192,16 @@ def _pool_output(pooling: str,
                  cls_output: torch.tensor,
                  mask: torch.tensor,
                  last_hidden_state: torch.tensor) -> torch.tensor:
+    """Pool the output of the model.
+    Args:
+        pooling: The pooling method (e.g. 'cls', 'max', 'mean')
+        cls_output: The output of the [CLS] token from the last hidden state; shape (batch_size, hidden_size)
+        mask: The attention mask
+        last_hidden_state: The last hidden state of the model (all tokens, shape (batch_size, seq_len, hidden_size))
+
+    Returns:
+        Tensor of shape (batch_size, hidden_size), representing a hidden-size embedding of the input sequence.
+    """
     if pooling == 'cls':
         output_vector = cls_output
     elif pooling == 'max':

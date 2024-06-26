@@ -10,14 +10,31 @@ from logger_config import logger
 
 @dataclass
 class EntityExample:
+    # example:
+    # "entity_id": "MONDO:0002974",
+    # "entity": "cervical cancer",
+    # "entity_desc": "A primary or metastatic malignant neoplasm involving the cervix."
+
     entity_id: str
     entity: str
     entity_desc: str = ''
 
 
 class TripletDict:
+    """Load triplets from multiple files and build a dictionary for
+    fast query of neighbors of a head entity given a relation."""
 
     def __init__(self, path_list: List[str]):
+        """path_list: list of paths to the triplet files. Each file should be a list of dictionaries,
+        where each dictionary contains 'head_id', 'head', 'relation', 'tail_id', 'tail' keys.
+        
+        Example:
+        [{"head_id": "HGNC:6483", "head": "LAMA3", "relation": "subclass of", "tail_id": "SO:0000704", "tail": "gene"}, ...]
+
+        The dictionary is built as a dictionary where each key is a tuple (head_id, relation) and the value is a set of tail ids.
+        These are used along with the entity dictionary represent the graph structure.
+        """
+
         self.path_list = path_list
         logger.info('Triplets path: {}'.format(self.path_list))
         self.relations = set()
@@ -29,6 +46,8 @@ class TripletDict:
         logger.info('Triplet statistics: {} relations, {} triplets'.format(len(self.relations), self.triplet_cnt))
 
     def _load(self, path: str):
+        """Load triplets from a file and build hr2tails dictionary.
+        hr2tails: {(head_id, relation): {tail_id1, tail_id2, ...}}"""
         examples = json.load(open(path, 'r', encoding='utf-8'))
         examples += [reverse_triplet(obj) for obj in examples]
         for ex in examples:
@@ -40,15 +59,27 @@ class TripletDict:
         self.triplet_cnt = len(examples)
 
     def get_neighbors(self, h: str, r: str) -> set:
+        """Get neighbors of a head entity given a relation."""
         return self.hr2tails.get((h, r), set())
 
 
 class EntityDict:
+    """Load entities from a file and build a dictionary for fast query of entity by id."""
 
     def __init__(self, entity_dict_dir: str, inductive_test_path: str = None):
+        """entity_dict_dir: directory containing 'entities.json' file describing entities.
+        Each entity should have 'entity_id', 'entity', 'entity_desc' keys.
+        
+        Example:
+        [{"entity_id": "MONDO:0002974", "entity": "cervical cancer", 
+          "entity_desc": "A primary or metastatic malignant neoplasm involving the cervix."}, ...]
+        
+        inductive_test_path: path to a file containing edges (head_id, tail_id) for validating or 
+        testing target prediction. If provided, only entities mentioned in the file (as a head or tail) will be loaded."""
         path = os.path.join(entity_dict_dir, 'entities.json')
         assert os.path.exists(path)
         self.entity_exs = [EntityExample(**obj) for obj in json.load(open(path, 'r', encoding='utf-8'))]
+
 
         if inductive_test_path:
             examples = json.load(open(inductive_test_path, 'r', encoding='utf-8'))
@@ -58,17 +89,23 @@ class EntityDict:
                 valid_entity_ids.add(ex['tail_id'])
             self.entity_exs = [ex for ex in self.entity_exs if ex.entity_id in valid_entity_ids]
 
+        # build index
+        # entity_id -> entity_example
         self.id2entity = {ex.entity_id: ex for ex in self.entity_exs}
         self.entity2idx = {ex.entity_id: i for i, ex in enumerate(self.entity_exs)}
         logger.info('Load {} entities from {}'.format(len(self.id2entity), path))
 
     def entity_to_idx(self, entity_id: str) -> int:
+        """Get the index of an entity given its id from the dictionary."""
         return self.entity2idx[entity_id]
 
     def get_entity_by_id(self, entity_id: str) -> EntityExample:
+        """Get an entity given its id from the dictionary."""
         return self.id2entity[entity_id]
 
+
     def get_entity_by_idx(self, idx: int) -> EntityExample:
+        """Get an entity given its index from the dictionary."""
         return self.entity_exs[idx]
 
     def __len__(self):
@@ -76,8 +113,23 @@ class EntityDict:
 
 
 class LinkGraph:
+    """Build a link graph from a list of triplets and provide methods to query neighbors of
+    a given entity."""
 
     def __init__(self, train_path: str):
+        """train_path: path to a file containing triplets.
+        Each triplet should have 'head_id', 'head', 'relation', 'tail_id', 'tail' keys.
+        
+        Example:
+        [{"head_id": "HGNC:6483", "head": "LAMA3", "relation": "subclass of", "tail_id": "SO:0000704", "tail": "gene"}, ...]
+        
+        The graph is built as a dictionary where each key is an entity id and the value is a set of neighbor entity ids. Example:
+        {
+            "HGNC:6483": {"SO:0000704", ...},
+            "SO:0000704": {"HGNC:6483", ...},
+            ...
+        }
+        """
         logger.info('Start to build link graph from {}'.format(train_path))
         # id -> set(id)
         self.graph = {}
@@ -93,6 +145,8 @@ class LinkGraph:
         logger.info('Done build link graph with {} nodes'.format(len(self.graph)))
 
     def get_neighbor_ids(self, entity_id: str, max_to_keep=10) -> List[str]:
+        """Get neighbors of a given entity id. Return at most max_to_keep neighbors.
+        If the number of neighbors exceeds max_to_keep, return the first max_to_keep neighbors."""
         # make sure different calls return the same results
         neighbor_ids = self.graph.get(entity_id, set())
         return sorted(list(neighbor_ids))[:max_to_keep]
@@ -102,6 +156,18 @@ class LinkGraph:
                                  n_hop: int = 2,
                                  # return empty if exceeds this number
                                  max_nodes: int = 100000) -> set:
+        """Get entities within n hops of the given entity id. Return at most max_nodes entities.
+        If the number of entities exceeds max_nodes, return an empty set.
+        
+        Args:
+        entity_id: the id of the entity to start with.
+        entity_dict: the entity dictionary containing entity examples; used to convert entity id to index.
+        n_hop: the number of hops to search.
+        max_nodes: the maximum number of entities to return.
+        
+        Returns:
+        a set of entity *indices* in the provided entity_dict within n hops of the given entity id."""
+
         if n_hop < 0:
             return set()
 
@@ -122,6 +188,12 @@ class LinkGraph:
 
 
 def reverse_triplet(obj):
+    """Reverse a triplet object.
+    Example:
+    {"head_id": "HGNC:6483", "head": "LAMA3", "relation": "subclass of", "tail_id": "SO:0000704", "tail": "gene"}
+    =>
+    {"head_id": "SO:0000704", "head": "gene", "relation": "inverse subclass of", "tail_id": "HGNC:6483", "tail": "LAMA3"}
+    """
     return {
         'head_id': obj['tail_id'],
         'head': obj['tail'],

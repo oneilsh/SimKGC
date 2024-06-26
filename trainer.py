@@ -24,7 +24,7 @@ class Trainer:
     def __init__(self, args, ngpus_per_node):
         self.args = args
         self.ngpus_per_node = ngpus_per_node
-        build_tokenizer(args)
+        build_tokenizer(args) # read from args.pretrained_model
 
         # create model
         logger.info("=> creating model")
