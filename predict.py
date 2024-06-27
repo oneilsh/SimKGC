@@ -13,7 +13,6 @@ from models import build_model
 from utils import AttrDict, move_to_cuda
 from dict_hub import build_tokenizer
 from logger_config import logger
-from evaluate import eval_single_direction
 
 class BertPredictor:
 
@@ -103,22 +102,13 @@ class BertPredictor:
         return torch.cat(ent_tensor_list, dim=0)
 
 if __name__ == '__main__':
+    from dict_hub import entity_dict
+    
     predictor = BertPredictor()
     predictor.load(ckt_path=args.eval_model_path)
     entity_tensor = predictor.predict_by_entities(entity_dict.entity_exs)
-
-    forward_metrics = eval_single_direction(predictor,
-                                            entity_tensor=entity_tensor,
-                                            eval_forward=True)
-    backward_metrics = eval_single_direction(predictor,
-                                             entity_tensor=entity_tensor,
-                                             eval_forward=False)
-    metrics = {k: round((forward_metrics[k] + backward_metrics[k]) / 2, 4) for k in forward_metrics}
-    logger.info('Averaged metrics: {}'.format(metrics))
+    print(entity_tensor)
 
     prefix, basename = os.path.dirname(args.eval_model_path), os.path.basename(args.eval_model_path)
     split = os.path.basename(args.valid_path)
-    with open('{}/metrics_{}_{}.json'.format(prefix, split, basename), 'w', encoding='utf-8') as writer:
-        writer.write('forward metrics: {}\n'.format(json.dumps(forward_metrics)))
-        writer.write('backward metrics: {}\n'.format(json.dumps(backward_metrics)))
-        writer.write('average metrics: {}\n'.format(json.dumps(metrics)))
+   

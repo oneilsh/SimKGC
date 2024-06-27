@@ -14,7 +14,7 @@ if [[ -z "${model_path}" ]]; then
 fi
 
 # task is going to take the form of "kg_hub/mondo_kgx_tsv.tar.gz"
-task = "kg_hub/mondo_kgx_tsv.tar.gz"
+task="kg_hub/mondo_kgx_tsv.tar.gz"
 
 
 DIR="$( cd "$( dirname "$0" )" && cd .. && pwd )"
@@ -40,7 +40,7 @@ if [ "${task}" = "wiki5m_ind" ]; then
   neighbor_weight=0.0
 fi
 
-python3 -u predict.py \
+poetry run python3 -u predict.py \
 --task "${task}" \
 --is-test \
 --eval-model-path "${model_path}" \
