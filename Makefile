@@ -9,17 +9,17 @@ install-deps:
 	poetry install
 
 # make runpod to setup runpod environment
-runpod: install-poetry install-deps
+install: install-poetry install-deps
 
 prepare:
 	./scripts/preprocess_kghub.sh
 
-train:
+train-model:
 	./scripts/train_kghub.sh
 
 
 # make model to run 
-model: prepare train
+train: prepare train-model
 
 # clean up checkpoints folder
 clean:
