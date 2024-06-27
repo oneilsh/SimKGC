@@ -13,7 +13,7 @@ from models import build_model
 from utils import AttrDict, move_to_cuda
 from dict_hub import build_tokenizer
 from logger_config import logger
-
+from evaluate import eval_single_direction
 
 class BertPredictor:
 
@@ -50,11 +50,13 @@ class BertPredictor:
         logger.info('Load model from {} successfully'.format(ckt_path))
 
     def _setup_args(self):
+        # pull args into self.train_args, but don't override ones specified in the model checkpoint
         for k, v in args.__dict__.items():
             if k not in self.train_args.__dict__:
                 logger.info('Set default attribute: {}={}'.format(k, v))
                 self.train_args.__dict__[k] = v
         logger.info('Args used in training: {}'.format(json.dumps(self.train_args.__dict__, ensure_ascii=False, indent=4)))
+        # if the checkpoint used the link graph, we should use it as well
         args.use_link_graph = self.train_args.use_link_graph
         args.is_test = True
 
@@ -99,3 +101,24 @@ class BertPredictor:
             ent_tensor_list.append(outputs['ent_vectors'])
 
         return torch.cat(ent_tensor_list, dim=0)
+
+if __name__ == '__main__':
+    predictor = BertPredictor()
+    predictor.load(ckt_path=args.eval_model_path)
+    entity_tensor = predictor.predict_by_entities(entity_dict.entity_exs)
+
+    forward_metrics = eval_single_direction(predictor,
+                                            entity_tensor=entity_tensor,
+                                            eval_forward=True)
+    backward_metrics = eval_single_direction(predictor,
+                                             entity_tensor=entity_tensor,
+                                             eval_forward=False)
+    metrics = {k: round((forward_metrics[k] + backward_metrics[k]) / 2, 4) for k in forward_metrics}
+    logger.info('Averaged metrics: {}'.format(metrics))
+
+    prefix, basename = os.path.dirname(args.eval_model_path), os.path.basename(args.eval_model_path)
+    split = os.path.basename(args.valid_path)
+    with open('{}/metrics_{}_{}.json'.format(prefix, split, basename), 'w', encoding='utf-8') as writer:
+        writer.write('forward metrics: {}\n'.format(json.dumps(forward_metrics)))
+        writer.write('backward metrics: {}\n'.format(json.dumps(backward_metrics)))
+        writer.write('average metrics: {}\n'.format(json.dumps(metrics)))
