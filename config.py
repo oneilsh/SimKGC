@@ -11,6 +11,8 @@ parser.add_argument('--pretrained-model', default='bert-base-uncased', type=str,
                     help='path to pretrained model')
 parser.add_argument('--task', default='wn18rr', type=str, metavar='N',
                     help='dataset name')
+parser.add_argument('--entities-json', default='', type=str, metavar='N',
+                    help='path to entities json file')
 parser.add_argument('--train-path', default='', type=str, metavar='N',
                     help='path to training data')
 parser.add_argument('--valid-path', default='', type=str, metavar='N',

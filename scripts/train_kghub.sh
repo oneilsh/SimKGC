@@ -15,7 +15,7 @@ if [ -z "$DATA_DIR" ]; then
   DATA_DIR="${DIR}/data/${TASK}"
 fi
 
-poetry run python3 -u main.py \
+poetry run python3 -u trainer.py \
 --model-dir "${OUTPUT_DIR}" \
 --pretrained-model bert-base-uncased \
 --pooling mean \

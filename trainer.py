@@ -16,17 +16,60 @@ from utils import save_checkpoint, delete_old_ckt, report_num_trainable_paramete
 from metric import accuracy
 from models import build_model, ModelOutput
 from dict_hub import build_tokenizer
-from logger_config import logger
+from logger_config import logger, logger_add_file_handler
+import os
+
+import torch.backends.cudnn as cudnn
+
+from config import args
 
 
 class Trainer:
+    """Trainer for training and evaluating the model. 
+
+       Note that the imported logger is used for logging
+    
+       Relevant model args:
+            pretrained_model: The pretrained model to use (e.g. 'bert-base-uncased')
+            t: The temperature parameter for the InfoNCE loss function (e.g. 0.05)
+            finetune_t: If True, make temperature as a trainable parameter (e.g. True)
+            additive_margin: The additive margin for the InfoNCE loss function (e.g. 0.0)
+            batch_size: The batch size (e.g. 128)
+            pre_batch: The number of pre-batch used for negatives (e.g. 0)
+            pre_batch_weight: The weight for logits from pre-batch negatives (e.g. 0.5)
+            use_self_negative: If True, use head entity as negative (e.g. True)
+            pooling: The pooling method (e.g. 'cls', 'max', 'mean')
+        
+       Relevant training args:
+            train_path: The path to the training data (edges .json)
+            valid_path: The path to the validation data (edges .json)
+            task: The dataset name base directory (e.g. 'wn18rr')
+
+            model_dir: The path to save model checkpoint (also the log file directory in training.log)
+            batch_size: The batch size (e.g. 128)
+            lr: The learning rate (e.g. 1e-4)
+            weight_decay: The weight decay (e.g. 0.0)
+            grad_clip: The gradient clipping (e.g. 10.0)
+            lr_scheduler: The learning rate scheduler (e.g. 'linear', 'cosine')
+            warmup: The warmup steps (e.g. 400)
+            epochs: The number of total epochs to run (e.g. 10)
+            eval_every_n_step: Evaluate every n steps (e.g. 10000)
+            max_to_keep: The maximum number of checkpoints to keep (e.g. 5)
+            print_freq: The print frequency (e.g. 10)
+            workers: The number of data loading workers (e.g. 1)
+            use_amp: Use amp if available (e.g. True)
+            max_num_tokens: The maximum number of tokens (e.g. 50)
+            use_link_graph: Use neighbors from link graph as context (e.g. True)
+    """
+
 
     def __init__(self, args, ngpus_per_node):
         self.args = args
         self.ngpus_per_node = ngpus_per_node
         build_tokenizer(args) # read from args.pretrained_model
 
-        # create model
+        logger_add_file_handler(os.path.join(args.model_dir, 'training.log'))
+
         logger.info("=> creating model")
         self.model = build_model(self.args)
         logger.info(self.model)
@@ -206,3 +249,20 @@ class Trainer:
                                                    num_training_steps=num_training_steps)
         else:
             assert False, 'Unknown lr scheduler: {}'.format(self.args.scheduler)
+
+
+
+def main():
+    logger.info('Args={}'.format(json.dumps(args.__dict__, ensure_ascii=False, indent=4)))
+
+
+    ngpus_per_node = torch.cuda.device_count()
+    logger.info("Using {} gpus for training".format(ngpus_per_node))
+
+    cudnn.benchmark = True
+
+    trainer = Trainer(args, ngpus_per_node=ngpus_per_node)
+    trainer.train_loop()
+
+if __name__ == '__main__':
+    main()

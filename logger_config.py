@@ -15,7 +15,7 @@ def _setup_logger():
     return logger
 
 
-def add_file_handler(log_file):
+def logger_add_file_handler(log_file):
     log_format = logging.Formatter("[%(asctime)s %(levelname)s] %(message)s")
     file_handler = logging.FileHandler(log_file, mode='a')
     file_handler.setFormatter(log_format)

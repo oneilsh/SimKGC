@@ -21,8 +21,11 @@ class EntityExample:
 
 
 class TripletDict:
-    """Load triplets from multiple files and build a dictionary for
-    fast query of neighbors of a head entity given a relation."""
+    """TripeletDict.hr2tails: {(head_id, relation): {tail_id1, tail_id2, ...}}
+       Initialize with TripletDict(path_list=["file1.json", "file2.json", ...])
+       
+       Where file1.json looks like:
+       [ {"head_id": "HGNC:6483", "head": "LAMA3", "relation": "subclass of", "tail_id": "SO:0000704", "tail": "gene"}, ... ]"""
 
     def __init__(self, path_list: List[str]):
         """path_list: list of paths to the triplet files. Each file should be a list of dictionaries,
@@ -64,9 +67,17 @@ class TripletDict:
 
 
 class EntityDict:
-    """Load entities from a file and build a dictionary for fast query of entity by id."""
+    """EntityDict.entity_exs is a list of EntityExample objects.
+       Allows lookup of entities by id, index, or value (EntityExample object).
+       
+       EntityExample is a dataclass with fields entity_id, entity, entity_desc.
+       
+       Initialize as EntityDict(entity_dict_dir=<directory containing 'entities.json' file>) OR
 
-    def __init__(self, entity_dict_dir: str, inductive_test_path: str = None):
+       
+       Example of 'entities.json': [{"entity_id": "MONDO:0002974", "entity": "cervical cancer", "entity_desc": "A primary or metastatic malignant neoplasm involving the cervix."}, ...]"""
+
+    def __init__(self, entity_dict_dir: str = None, entity_dict_json: str = None, inductive_test_path: str = None):
         """entity_dict_dir: directory containing 'entities.json' file describing entities.
         Each entity should have 'entity_id', 'entity', 'entity_desc' keys.
         
@@ -76,7 +87,12 @@ class EntityDict:
         
         inductive_test_path: path to a file containing edges (head_id, tail_id) for validating or 
         testing target prediction. If provided, only entities mentioned in the file (as a head or tail) will be loaded."""
-        path = os.path.join(entity_dict_dir, 'entities.json')
+
+        if entity_dict_json:
+            path = entity_dict_json
+        else:
+            path = os.path.join(entity_dict_dir, 'entities.json')
+
         assert os.path.exists(path)
         self.entity_exs = [EntityExample(**obj) for obj in json.load(open(path, 'r', encoding='utf-8'))]
 
@@ -113,8 +129,12 @@ class EntityDict:
 
 
 class LinkGraph:
-    """Build a link graph from a list of triplets and provide methods to query neighbors of
-    a given entity."""
+    """LinkGraph.graph looks like {"HGNC:6483": {"SO:0000704", ...}, "SO:0000704": {"HGNC:6483", ...}, ...}
+    
+       Initialize with LinkGraph(train_path="file.json")
+       
+       Where 'file.json' looks like:
+       [{"head_id": "HGNC:6483", "head": "LAMA3", "relation": "subclass of", "tail_id": "SO:0000704", "tail": "gene"}, ...]"""
 
     def __init__(self, train_path: str):
         """train_path: path to a file containing triplets.

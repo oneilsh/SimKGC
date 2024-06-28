@@ -11,7 +11,18 @@ from triplet_mask import construct_mask
 
 
 def build_model(args) -> nn.Module:
-    """Initialize a CustomBertModel model and return it."""
+    """Initialize a CustomBertModel model and return it.
+    Relevant args:
+        pretrained_model: The pretrained model to use (e.g. 'bert-base-uncased')
+        t: The temperature parameter for the InfoNCE loss function (e.g. 0.05)
+        finetune_t: If True, make temperature as a trainable parameter (e.g. True)
+        additive_margin: The additive margin for the InfoNCE loss function (e.g. 0.0)
+        batch_size: The batch size (e.g. 128)
+        pre_batch: The number of pre-batch used for negatives (e.g. 0)
+        pre_batch_weight: The weight for logits from pre-batch negatives (e.g. 0.5)
+        use_self_negative: If True, use head entity as negative (e.g. True)
+        pooling: The pooling method (e.g. 'cls', 'max', 'mean')
+    """
     return CustomBertModel(args)
 
 
@@ -26,6 +37,18 @@ class ModelOutput:
 
 
 class CustomBertModel(nn.Module, ABC):
+    """
+    Relevant args:
+        pretrained_model: The pretrained model to use (e.g. 'bert-base-uncased')
+        t: The temperature parameter for the InfoNCE loss function (e.g. 0.05)
+        finetune_t: If True, make temperature as a trainable parameter (e.g. True)
+        additive_margin: The additive margin for the InfoNCE loss function (e.g. 0.0)
+        batch_size: The batch size (e.g. 128)
+        pre_batch: The number of pre-batch used for negatives (e.g. 0)
+        pre_batch_weight: The weight for logits from pre-batch negatives (e.g. 0.5)
+        use_self_negative: If True, use head entity as negative (e.g. True)
+        pooling: The pooling method (e.g. 'cls', 'max', 'mean')
+    """
     def __init__(self, args):
         super().__init__()
         # Load pretrained model and config
