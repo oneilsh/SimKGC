@@ -23,7 +23,7 @@ if [ -z "$DATA_DIR" ]; then
   DATA_DIR="${DIR}/data/${task}"
 fi
 
-test_path="${DATA_DIR}/test.txt.json"
+test_path="${DATA_DIR}/small.txt.json"
 if [[ $# -ge 1 && ! "$1" == "--"* ]]; then
     test_path=$1
     shift

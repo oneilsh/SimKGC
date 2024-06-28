@@ -25,3 +25,7 @@ train: prepare train-model
 clean:
 	rm -rf checkpoint/kg_hub/*
 
+
+# run some predictions - needs work
+predict:
+	./scripts/predict_kghub.sh data/mondo_1epoch.mdl

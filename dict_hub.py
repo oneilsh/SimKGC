@@ -28,6 +28,9 @@ def _init_entity_dict():
     global entity_dict
     if not entity_dict:
         entity_dict = EntityDict(entity_dict_dir=os.path.dirname(args.valid_path))
+        import pprint
+        pp = pprint.PrettyPrinter(indent=4)
+        pp.pprint(entity_dict.entity_exs)
 
 
 def _init_train_triplet_dict():
