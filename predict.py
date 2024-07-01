@@ -108,13 +108,15 @@ if __name__ == '__main__':
     predictor = BertPredictor()
     predictor.load(ckt_path=args.eval_model_path)
     
-    # read args.entities_json which is the path to the... entities json
-    # as a new EntityDict object
     entities = EntityDict(entity_dict_json = args.entities_json)
 
     entity_tensor = predictor.predict_by_entities(entities.entity_exs)
-    print(entity_tensor)
+    for idx, entity_ex in enumerate(entities.entity_exs):
+        # we need to get it from the GPU as a list of float
+        entity_ex.embedding = entity_tensor[idx].cpu().tolist()
 
-    #prefix, basename = os.path.dirname(args.eval_model_path), os.path.basename(args.eval_model_path)
-    #split = os.path.basename(args.valid_path)
-   
+    entities.dump_json(args.entities_json.replace('.json', '_embedded.json'))
+
+    # # create a new json file with the embeddings called entities_embedded.json
+    # with open(args.entities_json.replace('.json', '_embedded.json'), 'w') as f:
+    #     json.dump(output, f, indent=4)

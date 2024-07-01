@@ -80,6 +80,7 @@ class HRTExample:
         self.head_id = head_id
         self.tail_id = tail_id
         self.relation = relation
+        self.hr_embedding = None
 
     @property
     def head_desc(self):
@@ -141,6 +142,10 @@ class HRTExample:
                 'head_token_ids': head_encoded_inputs['input_ids'],
                 'head_token_type_ids': head_encoded_inputs['token_type_ids'],
                 'obj': self}
+
+    def set_hr_embedding(self, hr_embedding: torch.tensor):
+        """Set the embedding for the head and relation."""
+        self.hr_embedding = hr_embedding
 
 
 class Dataset(torch.utils.data.dataset.Dataset):

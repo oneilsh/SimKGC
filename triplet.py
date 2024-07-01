@@ -7,6 +7,9 @@ from collections import deque
 
 from logger_config import logger
 
+import pandas as pd
+
+
 
 @dataclass
 class EntityExample:
@@ -18,6 +21,7 @@ class EntityExample:
     entity_id: str
     entity: str
     entity_desc: str = ''
+    embedding: List[float] = None
 
 
 class TripletDict:
@@ -126,6 +130,13 @@ class EntityDict:
 
     def __len__(self):
         return len(self.entity_exs)
+    
+    def to_pandas(self):
+        return pd.DataFrame([ex.__dict__ for ex in self.entity_exs])
+    
+    def dump_json(self, path):
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump([ex.__dict__ for ex in self.entity_exs], f, ensure_ascii=False, indent=4)
 
 
 class LinkGraph:
