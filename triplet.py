@@ -88,7 +88,7 @@ class EntityDict:
         inductive_test_path: path to a file containing edges (head_id, tail_id) for validating or 
         testing target prediction. If provided, only entities mentioned in the file (as a head or tail) will be loaded."""
 
-        if entity_dict_json:
+        if entity_dict_json is not None:
             path = entity_dict_json
         else:
             path = os.path.join(entity_dict_dir, 'entities.json')

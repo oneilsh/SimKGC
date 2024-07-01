@@ -40,7 +40,7 @@ if [ "${task}" = "wiki5m_ind" ]; then
   neighbor_weight=0.0
 fi
 
-poetry run python3 -u predict.py \
+echo poetry run python3 -u predict.py \
 --task "${task}" \
 --is-test \
 --eval-model-path "${model_path}" \

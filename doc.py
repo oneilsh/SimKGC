@@ -70,9 +70,10 @@ def get_neighbor_desc(head_id: str, tail_id: str = None) -> str:
     return ' '.join(entities)
 
 
-class Example:
+class HRTExample:
     """A class representing a training example. The object holds the head_id, tail_id, and relation, 
     and uses the global entity_dict to get other information about the entities.
+    An Example object can be vectorized to get the token ids, token type ids, and masks for the head, tail, and relation.
     """
 
     def __init__(self, head_id, relation, tail_id, **kwargs):
@@ -116,7 +117,9 @@ class Example:
             if len(tail_desc.split()) < 20:
                 tail_desc += ' ' + get_neighbor_desc(head_id=self.tail_id, tail_id=self.head_id)
 
+        # tasks-specific fixups
         head_word = _parse_entity_name(self.head)
+        # smart concatenation of name and description (removes duplicate name from description if present)
         head_text = _concat_name_desc(head_word, head_desc)
 
         # the hr will be encoded via BERTs sentence pair input
@@ -165,7 +168,7 @@ class Dataset(torch.utils.data.dataset.Dataset):
 
 def load_data(path: str,
               add_forward_triplet: bool = True,
-              add_backward_triplet: bool = True) -> List[Example]:
+              add_backward_triplet: bool = True) -> List[HRTExample]:
     assert path.endswith('.json'), 'Unsupported format: {}'.format(path)
     assert add_forward_triplet or add_backward_triplet
     logger.info('In test mode: {}'.format(args.is_test))
@@ -178,15 +181,18 @@ def load_data(path: str,
     for i in range(cnt):
         obj = data[i]
         if add_forward_triplet:
-            examples.append(Example(**obj))
+            examples.append(HRTExample(**obj))
         if add_backward_triplet:
-            examples.append(Example(**reverse_triplet(obj)))
+            examples.append(HRTExample(**reverse_triplet(obj)))
         data[i] = None
 
     return examples
 
 
 def collate(batch_data: List[dict]) -> dict:
+    """Collate the batch data. The batch data is a list of dictionaries, where each dictionary contains the token ids,
+    token type ids, and masks for the head, tail, and relation. The object is also stored in the dictionary. The triplet
+    mask and self negative mask are constructed for the batch data."""
     hr_token_ids, hr_mask = to_indices_and_mask(
         [torch.LongTensor(ex['hr_token_ids']) for ex in batch_data],
         pad_token_id=get_tokenizer().pad_token_id)

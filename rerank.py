@@ -5,11 +5,11 @@ from typing import List
 from config import args
 from triplet import EntityDict
 from dict_hub import get_link_graph
-from doc import Example
+from doc import HRTExample
 
 
 def rerank_by_graph(batch_score: torch.tensor,
-                    examples: List[Example],
+                    examples: List[HRTExample],
                     entity_dict: EntityDict):
 
     if args.task == 'wiki5m_ind':

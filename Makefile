@@ -27,5 +27,12 @@ clean:
 
 
 # run some predictions - needs work
-predict:
-	./scripts/predict_kghub.sh data/mondo_1epoch.mdl
+embed-entities: prepare
+	poetry run python3 -u predict.py \
+		--task kg_hub/mondo_kgx_tsv.tar.gz \
+		--is-test \
+		--eval-model-path data/mondo_1epoch.mdl \
+		--neighbor-weight 0.05 \
+		--rerank-n-hop 2 \
+		--entities-json data/kg_hub/mondo_kgx_tsv.tar.gz/entities_small.json \
+        --valid-path /Users/oneilsh/Documents/projects/tislab/llm_tests/SimKGC/data/kg_hub/mondo_kgx_tsv.tar.gz/small.txt.json

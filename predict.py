@@ -7,12 +7,13 @@ import torch.utils.data
 from typing import List
 from collections import OrderedDict
 
-from doc import collate, Example, Dataset
+from doc import collate, HRTExample, Dataset
 from config import args
 from models import build_model
 from utils import AttrDict, move_to_cuda
 from dict_hub import build_tokenizer
 from logger_config import logger
+from triplet import EntityDict
 
 class BertPredictor:
 
@@ -60,7 +61,7 @@ class BertPredictor:
         args.is_test = True
 
     @torch.no_grad()
-    def predict_by_examples(self, examples: List[Example]):
+    def predict_by_examples(self, examples: List[HRTExample]):
         data_loader = torch.utils.data.DataLoader(
             Dataset(path='', examples=examples, task=args.task),
             num_workers=1,
@@ -82,7 +83,7 @@ class BertPredictor:
     def predict_by_entities(self, entity_exs) -> torch.tensor:
         examples = []
         for entity_ex in entity_exs:
-            examples.append(Example(head_id='', relation='',
+            examples.append(HRTExample(head_id='', relation='',
                                     tail_id=entity_ex.entity_id))
         data_loader = torch.utils.data.DataLoader(
             Dataset(path='', examples=examples, task=args.task),
@@ -106,9 +107,14 @@ if __name__ == '__main__':
     
     predictor = BertPredictor()
     predictor.load(ckt_path=args.eval_model_path)
-    entity_tensor = predictor.predict_by_entities(entity_dict.entity_exs)
+    
+    # read args.entities_json which is the path to the... entities json
+    # as a new EntityDict object
+    entities = EntityDict(entity_dict_json = args.entities_json)
+
+    entity_tensor = predictor.predict_by_entities(entities.entity_exs)
     print(entity_tensor)
 
-    prefix, basename = os.path.dirname(args.eval_model_path), os.path.basename(args.eval_model_path)
-    split = os.path.basename(args.valid_path)
+    #prefix, basename = os.path.dirname(args.eval_model_path), os.path.basename(args.eval_model_path)
+    #split = os.path.basename(args.valid_path)
    

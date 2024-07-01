@@ -8,7 +8,7 @@ from typing import List, Tuple
 from dataclasses import dataclass, asdict
 
 from config import args
-from doc import load_data, Example
+from doc import load_data, HRTExample
 from predict import BertPredictor
 from dict_hub import get_entity_dict, get_all_triplet_dict
 from triplet import EntityDict
@@ -43,7 +43,7 @@ class PredInfo:
 def compute_metrics(hr_tensor: torch.tensor,
                     entities_tensor: torch.tensor,
                     target: List[int],
-                    examples: List[Example],
+                    examples: List[HRTExample],
                     k=3, batch_size=256) -> Tuple:
     assert hr_tensor.size(1) == entities_tensor.size(1)
     total = hr_tensor.size(0)
