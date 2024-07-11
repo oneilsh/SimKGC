@@ -67,3 +67,8 @@ embed-entities: prepare
 # not sure why train_path and valid-path is needed here, maybe due to the link graph being used by default to generate entity descriptions if they are short?
 
 #		--eval-model-path data/mondo_1epoch.mdl \
+
+push-huggingface:
+	poetry run python3 -u model_huggingface.py \
+	--pretrained-model checkpoint/kg_hub/$(KG_BASENAME)/model_best.mdl
+	--eval-model-path checkpoint/kg_hub/$(KG_BASENAME)/model_best.mdl \

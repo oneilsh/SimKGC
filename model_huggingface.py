@@ -15,7 +15,7 @@ from dict_hub import build_tokenizer
 from logger_config import logger
 from triplet import EntityDict
 
-class BertPredictor:
+class BertSaver:
 
     def __init__(self):
         self.model = None
@@ -66,63 +66,9 @@ class BertPredictor:
         args.use_link_graph = self.train_args.use_link_graph
         args.is_test = True
 
-    @torch.no_grad()
-    def predict_by_examples(self, examples: List[HRTExample]):
-        data_loader = torch.utils.data.DataLoader(
-            Dataset(path='', examples=examples, task=args.task),
-            num_workers=1,
-            batch_size=max(args.batch_size, 512),
-            collate_fn=collate,
-            shuffle=False)
 
-        hr_tensor_list, tail_tensor_list = [], []
-        for idx, batch_dict in enumerate(data_loader):
-            if self.use_cuda:
-                batch_dict = move_to_cuda(batch_dict)
-            outputs = self.model(**batch_dict)
-            hr_tensor_list.append(outputs['hr_vector'])
-            tail_tensor_list.append(outputs['tail_vector'])
-
-        return torch.cat(hr_tensor_list, dim=0), torch.cat(tail_tensor_list, dim=0)
-
-    @torch.no_grad()
-    def predict_by_entities(self, entity_exs) -> torch.tensor:
-        examples = []
-        for entity_ex in entity_exs:
-            examples.append(HRTExample(head_id='', relation='',
-                                    tail_id=entity_ex.entity_id))
-        data_loader = torch.utils.data.DataLoader(
-            Dataset(path='', examples=examples, task=args.task),
-            num_workers=2,
-            batch_size=max(args.batch_size, 1024),
-            collate_fn=collate,
-            shuffle=False)
-
-        ent_tensor_list = []
-        for idx, batch_dict in enumerate(tqdm.tqdm(data_loader)):
-            batch_dict['only_ent_embedding'] = True
-            if self.use_cuda:
-                batch_dict = move_to_cuda(batch_dict)
-            outputs = self.model(**batch_dict)
-            ent_tensor_list.append(outputs['ent_vectors'])
-
-        return torch.cat(ent_tensor_list, dim=0)
 
 if __name__ == '__main__':
-    from dict_hub import entity_dict
-    
-    predictor = BertPredictor()
-    predictor.load(ckt_path=args.eval_model_path)
-    
-    entities = EntityDict(entity_dict_json = args.entities_json)
-
-    entity_tensor = predictor.predict_by_entities(entities.entity_exs)
-    for idx, entity_ex in enumerate(entities.entity_exs):
-        # we need to get it from the GPU as a list of float
-        entity_ex.embedding = entity_tensor[idx].cpu().tolist()
-
-    entities.dump_json(args.entities_json.replace('.json', '_embedded.json'))
-
-    # # create a new json file with the embeddings called entities_embedded.json
-    # with open(args.entities_json.replace('.json', '_embedded.json'), 'w') as f:
-    #     json.dump(output, f, indent=4)
+    saver = BertSaver()
+    saver.load(ckt_path=args.eval_model_path)
+    saver.push_to_hub("sim-kgx-dev")

@@ -9,6 +9,8 @@ from transformers import AutoModel, AutoConfig
 
 from triplet_mask import construct_mask
 
+from huggingface_hub import PyTorchModelHubMixin
+
 
 def build_model(args) -> nn.Module:
     """Initialize a CustomBertModel model and return it.
@@ -36,7 +38,7 @@ class ModelOutput:
     tail_vector: torch.tensor
 
 
-class CustomBertModel(nn.Module, ABC):
+class CustomBertModel(nn.Module, ABC, PyTorchModelHubMixin):
     """
     Relevant args:
         pretrained_model: The pretrained model to use (e.g. 'bert-base-uncased')
