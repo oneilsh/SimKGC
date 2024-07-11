@@ -70,5 +70,5 @@ embed-entities: prepare
 
 push-huggingface:
 	poetry run python3 -u model_huggingface.py \
-	--pretrained-model checkpoint/kg_hub/$(KG_BASENAME)/model_best.mdl
-	--eval-model-path checkpoint/kg_hub/$(KG_BASENAME)/model_best.mdl \
+	--pretrained-model checkpoint/kg_hub/$(KG_BASENAME)/model_best.mdl \
+	--eval-model-path checkpoint/kg_hub/$(KG_BASENAME)/model_best.mdl

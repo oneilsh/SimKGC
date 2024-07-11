@@ -9,3 +9,4 @@ entities.json
 .idea/
 checkpoint/
 relations.json
+poetry.lock
