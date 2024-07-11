@@ -62,13 +62,22 @@ embed-entities: prepare
 		--rerank-n-hop 2 \
 		--entities-json data/kg_hub/$(KG_BASENAME)/entities.json \
 		--train-path data/kg_hub/$(KG_BASENAME)/train.txt.json \
-		--valid-path data/kg_hub/$(KG_BASENAME)/valid.txt.json \
+		--valid-path data/kg_hub/$(KG_BASENAME)/valid.txt.json
+
+	mv data/kg_hub/$(KG_BASENAME)/entities_embedded.json checkpoint/kg_hub/$(KG_BASENAME)/
 
 # not sure why train_path and valid-path is needed here, maybe due to the link graph being used by default to generate entity descriptions if they are short?
 
 #		--eval-model-path data/mondo_1epoch.mdl \
 
+login-huggingface:
+	poetry run huggingface-cli login
+
 push-huggingface:
 	poetry run python3 -u model_huggingface.py \
 	--pretrained-model checkpoint/kg_hub/$(KG_BASENAME)/model_best.mdl \
-	--eval-model-path checkpoint/kg_hub/$(KG_BASENAME)/model_best.mdl
+	--eval-model-path checkpoint/kg_hub/$(KG_BASENAME)/model_best.mdl \
+	--valid-path data/kg_hub/$(KG_BASENAME)/valid.txt.json \
+	--train-path data/kg_hub/$(KG_BASENAME)/train.txt.json 
+
+push: login-huggingface push-huggingface

@@ -71,4 +71,4 @@ class BertSaver:
 if __name__ == '__main__':
     saver = BertSaver()
     saver.load(ckt_path=args.eval_model_path)
-    saver.push_to_hub("sim-kgx-dev")
+    saver.model.push_to_hub("sim-kgx-dev")

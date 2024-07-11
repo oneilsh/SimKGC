@@ -28,6 +28,20 @@ def build_model(args) -> nn.Module:
     return CustomBertModel(args)
 
 
+MODEL_CARD_TEMPLATE = """
+---
+# For reference on model card metadata, see the spec: https://github.com/huggingface/hub-docs/blob/main/modelcard.md?plain=1
+# Doc / guide: https://huggingface.co/docs/hub/model-cards
+{{ card_data }}
+---
+
+See [repo](https://github.com/oneilsh/SimKGC).
+
+"""
+
+
+
+
 @dataclass
 class ModelOutput:
     """Model output dataclass. Contains logits, labels, inv_t, hr_vector (head + relation vector), and tail_vector."""
@@ -38,7 +52,11 @@ class ModelOutput:
     tail_vector: torch.tensor
 
 
-class CustomBertModel(nn.Module, ABC, PyTorchModelHubMixin):
+class CustomBertModel(nn.Module, 
+                      ABC, 
+                      PyTorchModelHubMixin,
+                      library_name="simkgc-kgx",
+                      model_card_template=MODEL_CARD_TEMPLATE):
     """
     Relevant args:
         pretrained_model: The pretrained model to use (e.g. 'bert-base-uncased')
