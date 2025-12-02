@@ -1,3 +1,4 @@
+.ipynb_checkpoints/
 data/mondo_1epoch.mdl
 data/kg_hub/
 *.pyc

@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := analysis
 
-KG_URL=https://kghub.io/kg-obo/mondo/2024-03-04/mondo_kgx_tsv.tar.gz
+KG_URL=http://data.monarchinitiative.org/monarch-kg/latest/monarch-kg.tar.gz
 KG_BASENAME=$(notdir $(KG_URL))
 
 install-poetry:
@@ -8,7 +8,7 @@ install-poetry:
 
 install-deps:
 	poetry lock
-	poetry install
+	poetry install --no-root
 
 # make runpod to setup runpod environment
 install: install-poetry install-deps
