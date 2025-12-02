@@ -33,7 +33,7 @@ train-model:
 	--train-path data/kg_hub/$(KG_BASENAME)/train.txt.json \
 	--valid-path data/kg_hub/$(KG_BASENAME)/valid.txt.json \
 	--task kg_hub/mondo_kgx_tsv.tar.gz \
-	--batch-size 128 \
+	--batch-size 1024 \
 	--print-freq 20 \
 	--additive-margin 0.02 \
 	--use-amp \
